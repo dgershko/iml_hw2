@@ -1,11 +1,13 @@
 from sklearn.base import BaseEstimator, ClassifierMixin
 import numpy as np
 
+
 class SoftSVM(BaseEstimator, ClassifierMixin):
     """
     Custom C-Support Vector Classification.
     """
-    def __init__(self, C: float, lr: float = 1e-5, batch_size = 32):
+
+    def __init__(self, C: float, lr: float = 1e-5, batch_size=32):
         """
         Initialize an instance of this class.
         ** Do not edit this method **
@@ -44,11 +46,10 @@ class SoftSVM(BaseEstimator, ClassifierMixin):
         """
         margins = (X.dot(w) + b).reshape(-1, 1)
         hinge_inputs = np.multiply(margins, y.reshape(-1, 1))
-        norm = np.linalg.norm(w)
-        loss = norm + C * np.sum(np.maximum(0, 1 - hinge_inputs))
+        norm_squared = np.linalg.norm(w) ** 2
+        loss = norm_squared + C * np.sum(np.maximum(0, 1 - hinge_inputs))
 
         return loss
-
 
     @staticmethod
     def subgradient(w, b: float, C: float, X, y):
@@ -62,14 +63,14 @@ class SoftSVM(BaseEstimator, ClassifierMixin):
         :param y: targets for loss computation; array of shape (n_samples,)
         :return: a tuple with (the gradient of the weights, the gradient of the bias)
         """
-        
-        threshold = np.vectorize(lambda x:-1 if x < 1 else 0)
+
+        threshold = np.vectorize(lambda x: -1 if x < 1 else 0)
 
         margins = (X.dot(w) + b).reshape(-1, 1)
         unhinged = np.multiply(margins, y.reshape(-1, 1))
         g_w = 2 * w + C * np.sum(np.multiply(np.multiply(threshold(unhinged), y.reshape(-1, 1)), X), axis=0)
         g_b = C * np.sum(np.multiply(threshold(unhinged), y.reshape(-1, 1)))
-        
+
         return g_w, g_b
 
     def fit_with_logs(self, X, y, max_iter: int = 2000, keep_losses: bool = True):
@@ -95,7 +96,7 @@ class SoftSVM(BaseEstimator, ClassifierMixin):
         permutation = np.random.permutation(len(y))
         X = X[permutation, :]
         y = y[permutation]
-        
+
         # Iterate over batches
         for iter in range(0, max_iter):
             start_idx = (iter * self.batch_size) % X.shape[0]
